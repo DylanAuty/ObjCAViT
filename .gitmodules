@@ -1,0 +1,4 @@
+[submodule "yolov7"]
+	path = yolov7
+	url = git@github.com:DylanAuty/yolov7.git
+	branch = u7

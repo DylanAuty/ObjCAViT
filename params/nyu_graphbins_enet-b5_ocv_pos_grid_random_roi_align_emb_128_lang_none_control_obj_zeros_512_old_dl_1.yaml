@@ -1,0 +1,161 @@
+# test/scratch parameter file
+
+basic:
+  # name:                 # Name override. If "None", "none" or blank, or if not present, will use params filename.
+  dataset: nyu          # Switch between different datasets. "nyu" or "kitti".
+  # dataset: kitti
+  batch_size: 8         # Batch size. 
+  max_epochs: 25        # Number of epochs to do
+  validate_every: 1     # Run val every N epochs
+  # from_checkpoint: ./runs/nyu_efficientnet-b1_1/version_0/checkpoints/epoch=0-step=3029.ckpt
+  # from_checkpoint: ./TEST_CHKPT.pt
+  # val_checkpoint: ./TEST_CHKPT.pt   # Checkpoint to evaluate. If this isn't present, will use most recent checkpoint of the run with the same name as the parameter file, or args.name if defined.
+  use_adabins_dataloader: True  # If set, will use the original adabins dataloader (and its onboard data augmentation).
+
+optimizer:
+  name: adamw
+  lr: 0.000357      # Learning rate to use
+  wd: 0.1           # Weight decay to use
+  # use_swa: True     # If true, discards the OneCycle LR scheduler and uses stochastic weight averaging instead.
+
+  # 1-Cycle LR Scheduler params
+  div_factor: 25    
+  final_div_factor: 100
+  # Gradient norm clipping factor - leave out or set to 0 to disable.
+  gradient_clip_val: 0.1
+
+model:
+  # name: adabins         # Name of model to use. Model-specific settings should be in args[args.model.name].
+  name: graphbins
+
+graphbins:
+  n_bins: 256               # Number of bins to use for the adaptive binning.
+  slow_encoder: 10          # If not none, encoder learning rate will be optimizer.lr / optimizer.slow_encoder.
+  # do_final_upscale: True  # If True, will add a final upscale layer to the dense feature extractor to get feature resolution to match input resolution.
+  yolov7_chkpt: ./yolov7_chkpts/yolov7-seg-lvis-e234.pt
+  # yolov7_chkpt: ./yolov7/yolov7-seg.pt
+  # encoder_name: efficientnet-b1
+  encoder_name: efficientnet-b5
+  # encoder_name: efficientnet-v2-s
+  # encoder_name: efficientnet-v2-m
+
+  # ObjCAViT settings
+  objcavit:
+    # Positional embedding strategy. Can be one of:
+    #   - pixelwise: one embedding per pixel coord at half res (H/2 * W/2).
+    #   - learned: use 5-layer MLP to embed 2d position (similar to SuperGlue)
+    #   - learned_bbox_wh:  As learned, but with an extra 2 channels on the input for the bbox width and height.
+    #                       The visual patch embeddings are also done with this: for them, width and height mean the 
+    #                       width and height for the patch (16px by default)
+    #   - grid_random: Implements one random, learnable vector per patch of image. For use with the object features,
+    #                  the grid of positional embeddings is bilinearly upsampled back to full image resolution, and 
+    #                  the required points are sampled from it.
+    #   - grid_random_roi_align: gets positional embeddings from the positional embedding grid using ROI Align.
+    #                            aims to capture position information for the whole bbox, not just the centre coords.
+    # positional_embedding_strategy: pixelwise
+    # positional_embedding_strategy: learned
+    # positional_embedding_strategy: learned_bbox_wh
+    # positional_embedding_strategy: grid_random
+    positional_embedding_strategy: grid_random_roi_align
+    embedding_dim: 128
+
+    # Object language strategy. How to assemble the natural language descriptions of the objects, but
+    # not how they're embedded (that's done in the language_embedding_strategy). Can be:
+    #   - none: Use the object labels as they come. Warning: LVIS-trained object detectors output synsets, not words, so this
+    #           may not behave in a sensible way.
+    #   - synset_def_wn: Assumes labels are wordnet synsets. Uses wordnet definition of that synset for the definition.
+    #   - name_synset_def_wn_rel_sz: As synset_def_wn, but with name at the start, and adds a comparative clause at the end for each object, comparing 
+    #     its apparent size to that of another object in the scene. If there's nothing/nothing else detected in the scene,
+    #     will add nothing.
+    obj_language_strategy: none
+    # obj_language_strategy: synset_def_wn
+    # obj_language_strategy: name_synset_def_wn_rel_sz
+
+    # Language embedding strategy. Can be:
+    #   - clip: Uses CLIP ViT-B/32 pretrained model, from the official OpenAI CLIP repository.
+    # language_embedding_strategy: clip
+    language_embedding_strategy: control_obj_zeros_512  # use all zeros as object features for every class. Will still have positional information.
+
+    ## ARCHITECTURAL MODIFICATIONS
+    # no_obj_sa: True # If present and True, will not do object self-attention - will treat object features as attended_object_features.
+    # use_2_saca: True  # Use 2 self-attention/cross-attention layers. If not present, will use 1.
+
+
+adabins:
+  n_bins: 256
+  slow_encoder: 10  # If not none, encoder learning rate will be optimizer.lr / optimizer.slow_encoder.
+  # do_final_upscale: True # If True, will add a final upscale layer to the dense feature extractor to get feature resolution to match input resolution.
+  # encoder_name: efficientnet-b1
+  encoder_name: efficientnet-b5
+  # encoder_name: efficientnet-v2-s
+  # encoder_name: efficientnet-v2-m
+
+yolov7seg:
+  # Settings related to yolov7/seg (found on the u7 branch of the yolov7 repository)
+  conf_thres: 0.25     # confidence threshold
+  iou_thres: 0.45      # NMS IOU threshold
+  max_det: 1000        # maximum detections per image
+  agnostic_nms: False  # class-agnostic NMS
+
+loss: # Information about different loss functions
+  names: ['silog', 'bins_chamfer']      # List of different loss functions to use.
+  coeffs: [1, 0.1]           # List of multipliers for the loss functions. Order follows loss_names.
+  # filenames_file_eval: ./datasets/split_filenames_files/kitti_eigen_test_files_with_gt.txt
+
+paths:  # Dataset-agnostic path information
+  data_dir: ./data      # Path to folder containing the nyu folder
+  run_dir: ./runs       # Path to tensorboard run dir.
+
+
+nyu:  # Even if NYU isn't being used, this has information about NYUD2-specific things
+  filenames_file_train: ./datasets/split_filenames_files/nyudepthv2_train_files_with_gt.txt
+  filenames_file_eval: ./datasets/split_filenames_files/nyudepthv2_test_files_with_gt.txt
+  base_path: nyu   # Base path beneath args.paths.data_dir containing nyu
+  train_path: sync  # Path beneath args.nyu.base_path containing the files found in the train filenames file
+  eval_path: official_splits/test # As above, with the test filenames file
+
+  # Norming factors: PIL images are converted to numpy arrays, then to tensors, then divided by these factors.
+  image_norm_factor: 255.0
+  depth_norm_factor: 1000.0
+
+  # Minimum and maximum depth values. Used for both training and evaluation. In metres.
+  # that it remains dataset-agnostic.
+  min_depth: 0.001
+  max_depth: 10
+
+  # Crop settings for use before computing metrics
+  eigen_crop: True        # Do Eigen crop when calculating metrics
+  garg_crop: False
+  do_kb_crop: False       # If set, crop input images as KITTI benchmark images
+  do_random_rotate: True  # If set, applies random rotation of +- args.dataset.degree to each batch
+  degree: 2.5
+
+  dimensions_train: [416, 544]  # Height, Width (in pixels)
+  dimensions_test: [480, 640]  # Height, Width (in pixels)
+
+
+kitti: 
+  filenames_file_train: ./datasets/split_filenames_files/kitti_eigen_train_files_with_gt.txt
+  # filenames_file_eval: ./datasets/split_filenames_files/kitti_eigen_test_files_with_gt.txt
+  filenames_file_eval: ./datasets/split_filenames_files/kitti_eigen_test_files_with_gt_shuffled.txt
+  base_path: kitti
+  data_path: raw    # datasets/kitti/raw
+  gt_path: data_depth_annotated      # datasets/kitti/data_depth_annotated
+  # Norming factors: PIL images are converted to numpy arrays, then to tensors, then divided by these factors.
+  image_norm_factor: 255.0
+  depth_norm_factor: 256.0
+
+  dimensions_train: [352, 704]  # Height, Width (in px)
+  dimensions_test: [376, 1241]
+  
+  min_depth: 0.001
+  max_depth: 80
+  garg_crop: True
+  eigen_crop: False
+  do_kb_crop: True    # Kitti benchmark crop: 352x1216.
+  do_random_rotate: True  # If set, applies random rotation of +- args.dataset.degree to each batch
+  degree: 1.0
+  use_right: False
+
+hardware:
+  num_workers: 8        # For use by the dataloaders
