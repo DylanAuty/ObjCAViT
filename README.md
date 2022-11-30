@@ -1,6 +1,6 @@
 # ObjCAViT: Improving Monocular Depth Estimation Using Natural Language Models And Image-Object Cross-Attention
 This is the official implementation of the paper "ObjCAViT: Improving Monocular Depth Estimation Using Natural Language
-Models And Image-Object Cross-Attention".
+Models And Image-Object Cross-Attention", Dylan Auty and Krystian Mikolajczyk
 
 ## Installation
 Create a new conda environment from `conda_environment_files/graphbins.yaml`. It will fail to install CLIP, OpenCV, and the NLTK corpuses needed to work, so do the following to fix it:
