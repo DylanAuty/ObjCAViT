@@ -1,6 +1,6 @@
 # ObjCAViT: Improving Monocular Depth Estimation Using Natural Language Models And Image-Object Cross-Attention
-This is the official implementation of the paper "ObjCAViT: Improving Monocular Depth Estimation Using Natural Language
-Models And Image-Object Cross-Attention", Dylan Auty and Krystian Mikolajczyk
+This is the official implementation of the paper ["ObjCAViT: Improving Monocular Depth Estimation Using Natural Language
+Models And Image-Object Cross-Attention", Dylan Auty and Krystian Mikolajczyk (arXiv:2211.17232)](https://arxiv.org/abs/2211.17232)
 
 ## Installation
 Create a new conda environment from `conda_environment_files/graphbins.yaml`. It will fail to install CLIP, OpenCV, and the NLTK corpuses needed to work, so do the following to fix it:
@@ -52,3 +52,5 @@ Use the `-v` flag. Specify either the params file or the automatically-saved `hp
 Validation mode runs on only one device, with a batch size of 1. It will save a file called `validation_output.txt` in the run directory, containing two sets of metrics: the image-wise running average, following the formulation used in BTS and AdaBins implementations, and the pixelwise total average across the entire validation set. The former is what is reported in the paper, to facilitate comparison with other methods in the literature.
 
 Validation **must** be run with the `--validate` or `-v` flags, and **must** be run with the most recent code. This may mean that checkpoints do not work, due to changes to the code; if this is the case, the checkpoint or params file may need to be changed to permit the newer code to work with the older checkpoints or params files.
+
+We have released the best NYUv2 checkpoint [here](https://github.com/DylanAuty/ObjCAViT/releases/tag/nyu_graphbins_enet-b5_ocv_pos_learned_bbox_wh_emb_128_old_dl_1).
